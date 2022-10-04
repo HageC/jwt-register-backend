@@ -7,6 +7,11 @@ const userValidation = Joi.object({
   password: Joi.string().pattern(new RegExp("^[a-zA-Z0-9]{3,30}$")),
 });
 
+const loginValidation = Joi.object({
+  email: Joi.string().min(6).required().email(),
+  password: Joi.string().pattern(new RegExp("^[a-zA-Z0-9]{3,30}$")),
+});
+
 const registerUser = async (req, res) => {
   const { name, email, password } = req.body;
 
@@ -20,10 +25,32 @@ const registerUser = async (req, res) => {
     }
 
     const user = await User.create({ name, email, password });
-    res.status(200).json({ user });
+    res.status(200).json({ user: user._id });
   } catch (error) {
     res.status(400).json({ error });
   }
 };
 
-export { registerUser };
+const loginUser = async (req, res) => {
+  const { email, password } = req.body;
+  const user = await User.findOne({ email }).select("+password");
+
+  if (!user) {
+    return res.status(400).json({ error: "Email doesn't exist." });
+  }
+
+  try {
+    const valid = await loginValidation.validateAsync({ email, password });
+    const validPassword = await user.comparePassword(password);
+
+    if (!validPassword) {
+      return res.status(400).json({ error: "Password is incorrect." });
+    }
+
+    res.status(200).json({ user: user._id });
+  } catch (error) {
+    res.status(400).json({ error });
+  }
+};
+
+export { registerUser, loginUser };
