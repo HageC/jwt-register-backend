@@ -13,6 +13,12 @@ const registerUser = async (req, res) => {
   try {
     const valid = await userValidation.validateAsync({ name, email, password });
 
+    const emailExists = await User.findOne({ email });
+
+    if (emailExists) {
+      return res.status(400).json({ error: "Email already in use." });
+    }
+
     const user = await User.create({ name, email, password });
     res.status(200).json({ user });
   } catch (error) {
